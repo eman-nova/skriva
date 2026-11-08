@@ -4,4 +4,4 @@ import {BrowserRouter} from 'react-router-dom'
 import App from './App'
 import {Provider} from './store'
 import './index.css'
-createRoot(document.getElementById('root')).render(<BrowserRouter><Provider><App/></Provider></BrowserRouter>)
+createRoot(document.getElementById('root')).render(<BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/,'')}><Provider><App/></Provider></BrowserRouter>)
