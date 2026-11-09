@@ -2,12 +2,13 @@ import {createContext,useContext,useEffect,useState} from 'react'
 import Toast from './components/Toast'
 import * as db from './db'
 import {API_ON,api} from './api'
+import {BUILT_IN} from './data/courses'
 const Ctx=createContext()
 export const useStore=()=>useContext(Ctx)
 const byCode=(a,b)=>a.code.localeCompare(b.code)
 // One data source: the backend when VITE_API_URL is set, otherwise the browser (IndexedDB).
 const src=API_ON?api:{
-  loadCourses:db.loadCourses,createCourse:async c=>{await db.saveCourse(c);return c},deleteCourse:db.deleteCourse,
+  loadCourses:async()=>[...BUILT_IN,...await db.loadCourses()],createCourse:async c=>{await db.saveCourse(c);return c},deleteCourse:db.deleteCourse,
   loadNotes:db.loadNotes,createNote:async n=>{await db.saveNote(n);return n},updateNote:async(n)=>{await db.saveNote(n);return n},deleteNote:db.deleteNote}
 export function Provider({children}){
   const [notes,setNotes]=useState([]),[courses,setCourses]=useState([]),[ready,setReady]=useState(false),[toast,setToast]=useState('')
@@ -18,7 +19,7 @@ export function Provider({children}){
   useEffect(()=>{load()},[])
   const getCourse=id=>courses.find(c=>c.id===id)
   const addCourse=async c=>{const s=await src.createCourse(c);setCourses(l=>[...l,s].sort(byCode))}
-  const removeCourse=async id=>{await src.deleteCourse(id);setCourses(l=>l.filter(x=>x.id!==id))}
+  const removeCourse=async id=>{if(BUILT_IN.some(c=>c.id===id))return;await src.deleteCourse(id);setCourses(l=>l.filter(x=>x.id!==id))}
   const addNote=async n=>{const s=await src.createNote(n);setNotes(l=>[s,...l])}
   const updateNote=async(id,patch)=>{const n={...notes.find(x=>x.id===id),...patch},s=await src.updateNote(n,patch);setNotes(l=>l.map(x=>x.id===id?s:x))}
   const removeNote=async id=>{await src.deleteNote(id);setNotes(l=>l.filter(x=>x.id!==id))}

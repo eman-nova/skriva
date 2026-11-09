@@ -4,14 +4,13 @@ import {useStore} from '../store'
 import {LayoutDashboard,BookOpen,User,Upload,FileText,LogOut,Download,Pencil,Trash2} from 'lucide-react'
 import logo from '../assets/logo.png'
 import logoDark from '../assets/logo-dark.png'
-import {LECTURERS} from '../data/mock'
-import {API_ON,getUser,logout,getFileBlob} from '../api'
-export const lecturerName=n=>n.lecturerName||LECTURERS[n.lecturerId]||''
+import {getUser,logout,getFileBlob} from '../api'
+export const lecturerName=n=>n.lecturerName||''
 export const Logo=({className='',dark})=><img src={dark?logoDark:logo} alt="Skriva: Learn, Access, Grow" className={className}/>
 export function PublicLayout({children,dark}){
   return <><header className={`z-10 ${dark?'absolute inset-x-0':'border-b border-slate/10 bg-white'}`}><div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3"><Link to="/"><Logo dark={dark} className="h-14"/></Link><nav className="flex gap-2"><Link to="/student/login" className="btn btn-gold btn-sm">Student login</Link><Link to="/lecturer/login" className={`btn btn-sm ${dark?'btn-ghost':'btn-alt'}`}>Lecturer login</Link></nav></div></header><main>{children}</main></>}
 export function Shell({role,children}){
-  if(API_ON&&!getUser(role))return <Navigate to={`/${role}/login`} replace/>
+  if(!getUser(role))return <Navigate to={`/${role}/login`} replace/>
   const nav=role==='student'?[['/student/dashboard','Dashboard',LayoutDashboard],['/student/courses','Courses',BookOpen],['/student/profile','Profile',User]]:[['/lecturer/dashboard','Dashboard',LayoutDashboard],['/lecturer/notes','My notes',FileText],['/lecturer/courses','Courses',BookOpen],['/lecturer/notes/upload','Upload',Upload],['/lecturer/profile','Profile',User]]
   return <div className="md:grid md:min-h-screen md:grid-cols-[240px_1fr]"><aside className="flex flex-wrap items-center gap-1 bg-gradient-to-b from-[#001340] to-navy p-4 md:sticky md:top-0 md:h-screen md:flex-col md:items-stretch"><Link to="/"><Logo dark className="mb-3 w-32 md:w-full"/></Link>
     <nav aria-label={`${role} portal`} className="flex flex-wrap gap-1 md:flex-col">{nav.map(([to,t,I])=><NavLink key={to} to={to} end className={({isActive})=>`flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-white ${isActive?'bg-brand shadow-lg':'hover:bg-white/10'}`}><I size={18}/>{t}</NavLink>)}</nav>

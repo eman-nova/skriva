@@ -1,6 +1,6 @@
 import {Routes,Route,Navigate} from 'react-router-dom'
 import Landing from './pages/Landing'
-import {Login,Forgot} from './pages/Auth'
+import {Login,Signup,Forgot} from './pages/Auth'
 import {StudentDashboard,StudentCourses,CourseMaterials,NotePage} from './pages/Student'
 import {LecturerDashboard,ManageNotes,NoteForm,ManageCourses} from './pages/Lecturer'
 import Profile from './pages/Profile'
@@ -9,6 +9,8 @@ export default function App(){return <>
 <Route path="/" element={<Landing/>}/>
 <Route path="/student/login" element={<Login role="student"/>}/>
 <Route path="/lecturer/login" element={<Login role="lecturer"/>}/>
+<Route path="/student/signup" element={<Signup role="student"/>}/>
+<Route path="/lecturer/signup" element={<Signup role="lecturer"/>}/>
 <Route path="/student/forgot-password" element={<Forgot role="student"/>}/>
 <Route path="/lecturer/forgot-password" element={<Forgot role="lecturer"/>}/>
 <Route path="/student/dashboard" element={<StudentDashboard/>}/>

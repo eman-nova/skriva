@@ -3,16 +3,16 @@ import {Link,useParams} from 'react-router-dom'
 import {Download} from 'lucide-react'
 import {Shell,NoteRow,Empty,Chip,CourseCard,PagedList,downloadNote,lecturerName} from '../components/ui'
 import {getUser,getFileBlob} from '../api'
-import {DEPARTMENTS,STUDENT} from '../data/mock'
+import {DEPARTMENTS} from '../data/mock'
 import {useStore} from '../store'
 export function StudentDashboard(){
-  const me=getUser('student')||STUDENT
+  const me=getUser('student')||{}
   const {notes,courses,getCourse}=useStore(),[q,setQ]=useState(''),found=notes.filter(n=>(n.title+(getCourse(n.courseId)?.title||'')+lecturerName(n)).toLowerCase().includes(q.toLowerCase())),mine=courses.filter(c=>c.department===me.department&&c.level===(me.level||300))
-  return <Shell role="student"><h1 className="text-3xl">Welcome back, {(me.name||'').split(' ')[0]}</h1><p>{me.department} · {me.level||300} Level · {me.matricNumber||me.id}</p>
+  return <Shell role="student"><h1 className="text-3xl">{me.returning?'Welcome back':'Welcome'}, {(me.name||'').split(' ')[0]}</h1><p>{me.department} · {me.level||300} Level · {me.matricNumber||me.id}</p>
   <label htmlFor="gs" className="label">Search lecture materials</label><input id="gs" className="input max-w-md" placeholder="Course, note title or lecturer" value={q} onChange={e=>setQ(e.target.value)}/>{q&&<div className="card mt-3">{found.length?found.map(n=><NoteRow key={n.id} n={n} role="student"/>):<Empty title="No matches" text="Try another word."/>}</div>}<h2 className="mt-6 text-2xl">Your courses</h2><div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{mine.length?mine.map(c=><CourseCard key={c.id} c={c} count={notes.filter(n=>n.courseId===c.id).length}/>):<div className="col-span-full"><Empty title="No courses yet" text="Courses appear here once your lecturers add them."/></div>}</div>
   <h2 className="mt-6 text-2xl">Recently added</h2><div className="card mt-3">{notes.length?[...notes].slice(0,4).map(n=><NoteRow key={n.id} n={n} role="student"/>):<Empty title="No notes yet" text="Notes appear here once your lecturers upload them."/>}</div></Shell>}
 export function StudentCourses(){
-  const {courses}=useStore(),[dept,setDept]=useState((getUser('student')||STUDENT).department||DEPARTMENTS[0]),[q,setQ]=useState('')
+  const {courses}=useStore(),[dept,setDept]=useState((getUser('student')||{}).department||DEPARTMENTS[0]),[q,setQ]=useState('')
   const list=courses.filter(c=>c.department===dept&&c.level===300&&(c.code+c.title).toLowerCase().includes(q.toLowerCase()))
   return <Shell role="student"><h1 className="text-3xl">Courses</h1><div className="my-3 flex flex-wrap gap-2" role="group" aria-label="Department">{DEPARTMENTS.map(d=><Chip key={d} on={d===dept} onClick={()=>setDept(d)}>{d}</Chip>)}</div>
   <p><span className="badge">300 Level</span> Skriva is open to 300 level students.</p><label htmlFor="cq" className="label">Search courses</label><input id="cq" className="input max-w-sm" value={q} onChange={e=>setQ(e.target.value)}/>

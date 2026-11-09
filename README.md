@@ -1,6 +1,6 @@
 # Skriva (frontend)
 
-Lecture notes platform for students at Bells University of Technology. Students browse courses and preview or download PDF notes. Lecturers add courses and upload notes.
+Lecture notes platform for 300 level students at Bells University of Technology. Students browse courses and preview or download PDF notes. Lecturers add courses and upload notes.
 
 Built from SKRIVA PRD v1.1 with React, Vite, React Router, Tailwind CSS and Lucide React.
 
