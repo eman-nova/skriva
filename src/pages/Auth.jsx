@@ -1,8 +1,8 @@
-import {useState} from 'react'
+import {useEffect,useState} from 'react'
 import {Link,useNavigate} from 'react-router-dom'
 import {Eye,EyeOff,Loader2} from 'lucide-react'
 import {PublicLayout,Field} from '../components/ui'
-import {API_ON,login,register,forgotPassword} from '../api'
+import {API_ON,login,register,verifyEmail,resendCode,forgotPassword} from '../api'
 import {DEPARTMENTS} from '../data/mock'
 const T={student:{h:'Student login',l:'Matriculation number',idl:'Matriculation number',ph:'e.g. 21/0457',side:['Welcome.','Every note for your courses, in one place.'],note:'Skriva is open to 300 level students only.'},lecturer:{h:'Lecturer login',l:'Lecturer ID or personal email',idl:'Lecturer ID',ph:'e.g. LEC-0231',side:['Lecturer portal.','Upload, organise and update the materials your students rely on.'],note:'Sign in to manage your lecture notes.'}}
 export function Login({role}){
@@ -17,30 +17,45 @@ export function Login({role}){
   <label htmlFor="p" className="label">Password</label><div className="relative"><input id="p" className="input pr-12" type={show?'text':'password'} value={p} onChange={x=>setP(x.target.value)}/><button type="button" onClick={()=>setShow(!show)} aria-label={show?'Hide password':'Show password'} className="absolute right-3 top-2.5 text-brand">{show?<EyeOff size={20}/>:<Eye size={20}/>}</button></div>
   <div className="err" role="alert">{e.p}</div><div className="err" role="alert">{e.f}</div>
   <button className={`btn w-full ${role==='lecturer'?'btn-gold':''}`} disabled={busy}>{busy?<><Loader2 className="animate-spin" size={18}/>Signing in</>:'Log in'}</button></form>
-  <p className="mt-4"><Link className="text-brand underline" to={`/${role}/forgot-password`}>Forgot password?</Link></p><p className="mt-2">New here? <Link className="text-brand underline" to={`/${role}/signup`}>Create an account</Link></p></section></div></PublicLayout>}
+  <p className="mt-4"><Link className="text-brand underline" to={`/${role}/forgot-password`}>Forgot password?</Link></p></section></div></PublicLayout>}
 export function Forgot({role}){const t=T[role],[sent,setSent]=useState(false),[id,setId]=useState(''),[err,setErr]=useState(''),[busy,setBusy]=useState(false)
   const send=()=>{setErr('');if(!id.trim()){setErr(`Enter your ${t.l.toLowerCase()}.`);return}
     if(!API_ON){setSent(true);return}
     setBusy(true);forgotPassword(role,id.trim()).then(()=>setSent(true)).catch(e=>setErr(e.message)).finally(()=>setBusy(false))}
   return <PublicLayout><section className="card mx-auto my-12 max-w-md"><h1 className="text-3xl">Reset your password</h1><p>Enter your {t.l.toLowerCase()}. {API_ON?'We will send reset steps if the account exists.':'Reset steps will be sent once the backend is connected.'}</p><Field id="r" label={t.l} value={id} onChange={x=>setId(x.target.value)} error={err}/>
   {sent&&<p role="status" className="text-green-700">{API_ON?'If the account exists, reset steps have been sent.':'Reset link simulated.'}</p>}<button className="btn" disabled={busy} onClick={send}>Send reset link</button> <Link className="ml-3 text-brand underline" to={`/${role}/login`}>Back to login</Link></section></PublicLayout>}
+const GMAIL=/^[^\s@]+@gmail\.com$/i
 export function Signup({role}){
-  const t=T[role],nav=useNavigate(),[f,setF]=useState({name:'',id:'',department:DEPARTMENTS[0],email:'',password:'',confirm:''}),[e,setE]=useState({}),[busy,setBusy]=useState(false)
-  const set=k=>x=>setF({...f,[k]:x.target.value})
+  const t=T[role],nav=useNavigate(),[step,setStep]=useState('form'),[demo,setDemo]=useState(''),[code,setCode]=useState(''),[wait,setWait]=useState(0)
+  const [f,setF]=useState({name:'',id:'',department:DEPARTMENTS[0],email:'',password:'',confirm:''}),[e,setE]=useState({}),[busy,setBusy]=useState(false)
+  const set=k=>x=>setF({...f,[k]:x.target.value}),email=f.email.trim()
+  useEffect(()=>{if(wait<=0)return;const id=setTimeout(()=>setWait(wait-1),1000);return()=>clearTimeout(id)},[wait])
   const submit=ev=>{ev.preventDefault()
-    const x={name:f.name.trim()?'':'Enter your full name.',id:f.id.trim()?'':`Enter your ${t.idl.toLowerCase()}.`,email:/^\S+@\S+\.\S+$/.test(f.email.trim())?'':'Enter a valid email address.',password:f.password.length>=6?'':'Use 6 or more characters.',confirm:f.confirm===f.password?'':'The passwords do not match.'}
+    const x={name:f.name.trim()?'':'Enter your full name.',id:f.id.trim()?'':`Enter your ${t.idl.toLowerCase()}.`,email:GMAIL.test(email)?'':'Use your Gmail address, for example yourname@gmail.com.',password:f.password.length>=6?'':'Use 6 or more characters.',confirm:f.confirm===f.password?'':'The passwords do not match.'}
     setE(x);if(Object.values(x).some(Boolean))return
     setBusy(true)
-    register(role,{name:f.name.trim(),id:f.id.trim(),department:f.department,email:f.email.trim(),password:f.password}).then(()=>nav(`/${role}/dashboard`)).catch(err=>{setE({f:err.message});setBusy(false)})}
-  return <PublicLayout><div className="mx-auto my-12 grid max-w-4xl overflow-hidden rounded-3xl shadow-2xl md:grid-cols-2">
-  <aside className="flex flex-col justify-center bg-gradient-to-br from-[#001340] to-navy p-10 text-white"><h2 className="text-4xl !text-white">{t.side[0]}</h2><p className="text-blue-100">{t.side[1]}</p></aside>
-  <section className={`bg-white p-10 border-t-8 ${role==='student'?'border-brand':'border-gold'}`}><h1 className="text-3xl">{role==='student'?'Student sign up':'Lecturer sign up'}</h1><p>{role==='student'?'Skriva is open to 300 level students only.':'Create your account to manage lecture notes.'}</p>
+    register(role,{name:f.name.trim(),id:f.id.trim(),department:f.department,email,password:f.password}).then(r=>{setDemo(r.demoCode||'');setCode('');setWait(30);setStep('verify');setBusy(false)}).catch(err=>{setE({f:err.message});setBusy(false)})}
+  const verify=ev=>{ev.preventDefault();if(!/^\d{6}$/.test(code.trim())){setE({c:'Enter the 6-digit code.'});return}
+    setE({});setBusy(true);verifyEmail(role,email,code).then(()=>nav(`/${role}/dashboard`)).catch(err=>{setE({c:err.message});setBusy(false)})}
+  const resend=()=>{setE({});resendCode(role,email).then(r=>{setDemo(r.demoCode||'');setCode('');setWait(30)}).catch(err=>setE({c:err.message}))}
+  const aside=<aside className="flex flex-col justify-center bg-gradient-to-br from-[#001340] to-navy p-10 text-white"><h2 className="text-4xl !text-white">{t.side[0]}</h2><p className="text-blue-100">{t.side[1]}</p></aside>
+  const border=`bg-white p-10 border-t-8 ${role==='student'?'border-brand':'border-gold'}`
+  if(step==='verify')return <PublicLayout><div className="mx-auto my-12 grid max-w-4xl overflow-hidden rounded-3xl shadow-2xl md:grid-cols-2">{aside}
+  <section className={border}><h1 className="text-3xl">Check your Gmail</h1><p>We sent a 6-digit code to <b>{email.replace(/^(.).*(@.*)$/,'$1***$2')}</b>. It expires in 10 minutes.</p>
+  {demo&&<p className="mt-3 rounded-xl bg-ivory p-3 text-sm" role="status"><b>Demo mode:</b> emails cannot be sent until the backend is connected, so your code is shown here: <b className="text-lg tracking-widest">{demo}</b></p>}
+  <form onSubmit={verify} noValidate><label htmlFor="vc" className="label">Verification code</label><input id="vc" className="input text-center text-2xl tracking-[0.5em]" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={x=>setCode(x.target.value.replace(/\D/g,''))}/>
+  <div className="err" role="alert">{e.c}</div>
+  <button className={`btn w-full ${role==='lecturer'?'btn-gold':''}`} disabled={busy}>{busy?<><Loader2 className="animate-spin" size={18}/>Verifying</>:'Verify and create account'}</button></form>
+  <p className="mt-4">Did not get it? {wait>0?<span>Resend in {wait}s</span>:<button type="button" className="text-brand underline" onClick={resend}>Send a new code</button>}</p>
+  <p className="mt-2"><button type="button" className="text-brand underline" onClick={()=>{setStep('form');setE({})}}>Change my email</button></p></section></div></PublicLayout>
+  return <PublicLayout><div className="mx-auto my-12 grid max-w-4xl overflow-hidden rounded-3xl shadow-2xl md:grid-cols-2">{aside}
+  <section className={border}><h1 className="text-3xl">{role==='student'?'Student sign up':'Lecturer sign up'}</h1><p>{role==='student'?'Skriva is open to 300 level students only.':'Create your account to manage lecture notes.'}</p>
   <form onSubmit={submit} noValidate><Field id="n" label="Full name" value={f.name} onChange={set('name')} error={e.name}/>
   <Field id="i" label={t.idl} placeholder={t.ph} value={f.id} onChange={set('id')} error={e.id}/>
   <Field id="d" label="Department"><select id="d" className="input" value={f.department} onChange={set('department')}>{DEPARTMENTS.map(d=><option key={d}>{d}</option>)}</select></Field>
-  <Field id="m" label="Email" type="email" value={f.email} onChange={set('email')} error={e.email}/>
+  <Field id="m" label="Gmail address" type="email" placeholder="yourname@gmail.com" value={f.email} onChange={set('email')} error={e.email}/>
   <Field id="pw" label="Password" type="password" value={f.password} onChange={set('password')} error={e.password}/>
   <Field id="pc" label="Confirm password" type="password" value={f.confirm} onChange={set('confirm')} error={e.confirm}/>
   <div className="err" role="alert">{e.f}</div>
-  <button className={`btn w-full ${role==='lecturer'?'btn-gold':''}`} disabled={busy}>{busy?<><Loader2 className="animate-spin" size={18}/>Creating account</>:'Create account'}</button></form>
+  <button className={`btn w-full ${role==='lecturer'?'btn-gold':''}`} disabled={busy}>{busy?<><Loader2 className="animate-spin" size={18}/>Sending code</>:'Send verification code'}</button></form>
   <p className="mt-4">Already have an account? <Link className="text-brand underline" to={`/${role}/login`}>Log in</Link></p></section></div></PublicLayout>}

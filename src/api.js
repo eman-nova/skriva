@@ -42,16 +42,36 @@ export const api={
   updateNote:async(n,patch)=>toNote(await req(`/notes/${n.id}`,{method:'PUT',form:noteForm(n,patch.blob)})),
   deleteNote:id=>req(`/notes/${id}`,{method:'DELETE'}),
 }
+// Sign up has two steps. register() sends a 6-digit code to the user's Gmail address.
+// verifyEmail() checks the code and only then creates the account.
+// Without a backend no email can be sent, so the demo returns the code (demoCode) to show on screen.
+const PK='skriva_pending'
+const newCode=()=>String(100000+crypto.getRandomValues(new Uint32Array(1))[0]%900000)
+const readPending=()=>{try{return JSON.parse(sessionStorage.getItem(PK))}catch{return null}}
 export async function register(role,d){
-  const user={id:d.id,name:d.name,department:d.department,email:d.email,...(role==='student'?{matricNumber:d.id,level:300}:{})}
   if(!API_ON){
     const list=readAccounts()
     if(list.some(a=>a.role===role&&same(a.id,d.id)))throw new Error('An account with this ID already exists. Log in instead.')
     if(list.some(a=>a.role===role&&same(a.email,d.email)))throw new Error('An account with this email already exists. Log in instead.')
-    list.push({...user,role,hash:await sha(d.password),lastLoginAt:Date.now()});saveAccounts(list)
-    setSession({...user,returning:false},role);return user}
-  const r=await req('/auth/register',{method:'POST',body:{role,name:d.name,identifier:d.id,department:d.department,email:d.email,password:d.password}})
+    const user={id:d.id,name:d.name,department:d.department,email:d.email,...(role==='student'?{matricNumber:d.id,level:300}:{})},code=newCode()
+    sessionStorage.setItem(PK,JSON.stringify({role,user,hash:await sha(d.password),code,expires:Date.now()+600000,tries:0}))
+    return {demoCode:code}}
+  await req('/auth/register',{method:'POST',body:{role,name:d.name,identifier:d.id,department:d.department,email:d.email,password:d.password}})
+  return {}}
+export async function verifyEmail(role,email,code){
+  if(!API_ON){
+    const p=readPending()
+    if(!p||p.role!==role||!same(p.user.email,email))throw new Error('Something went wrong. Start the sign up again.')
+    if(Date.now()>p.expires)throw new Error('This code has expired. Request a new one.')
+    if(p.tries>=5)throw new Error('Too many wrong tries. Request a new code.')
+    if(p.code!==String(code).trim()){p.tries++;sessionStorage.setItem(PK,JSON.stringify(p));throw new Error('That code is not right. Check it and try again.')}
+    const list=readAccounts();list.push({...p.user,role,hash:p.hash,emailVerified:true,lastLoginAt:Date.now()});saveAccounts(list)
+    sessionStorage.removeItem(PK);setSession({...p.user,returning:false},role);return p.user}
+  const r=await req('/auth/verify-email',{method:'POST',body:{role,email,code:String(code).trim()}})
   setSession({...r.user,returning:false},role,r.token);return r.user}
+export async function resendCode(role,email){
+  if(!API_ON){const p=readPending();if(!p)throw new Error('Start the sign up again.');p.code=newCode();p.expires=Date.now()+600000;p.tries=0;sessionStorage.setItem(PK,JSON.stringify(p));return {demoCode:p.code}}
+  await req('/auth/resend-code',{method:'POST',body:{role,email}});return {}}
 export async function login(role,identifier,password){
   if(!API_ON){
     const list=readAccounts(),acc=list.find(a=>a.role===role&&(same(a.id,identifier)||same(a.email,identifier)))

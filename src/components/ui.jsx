@@ -8,7 +8,7 @@ import {getUser,logout,getFileBlob} from '../api'
 export const lecturerName=n=>n.lecturerName||''
 export const Logo=({className='',dark})=><img src={dark?logoDark:logo} alt="Skriva: Learn, Access, Grow" className={className}/>
 export function PublicLayout({children,dark}){
-  return <><header className={`z-10 ${dark?'absolute inset-x-0':'border-b border-slate/10 bg-white'}`}><div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3"><Link to="/"><Logo dark={dark} className="h-14"/></Link><nav className="flex gap-2"><Link to="/student/login" className="btn btn-gold btn-sm">Student login</Link><Link to="/lecturer/login" className={`btn btn-sm ${dark?'btn-ghost':'btn-alt'}`}>Lecturer login</Link></nav></div></header><main>{children}</main></>}
+  return <><header className={`z-10 ${dark?'absolute inset-x-0':'border-b border-slate/10 bg-white'}`}><div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3"><Link to="/"><Logo dark={dark} className="h-14"/></Link><nav className="flex gap-2"><Link to="/student/signup" className="btn btn-gold btn-sm">Student sign up</Link><Link to="/lecturer/signup" className={`btn btn-sm ${dark?'btn-ghost':'btn-alt'}`}>Lecturer sign up</Link></nav></div></header><main>{children}</main></>}
 export function Shell({role,children}){
   if(!getUser(role))return <Navigate to={`/${role}/login`} replace/>
   const nav=role==='student'?[['/student/dashboard','Dashboard',LayoutDashboard],['/student/courses','Courses',BookOpen],['/student/profile','Profile',User]]:[['/lecturer/dashboard','Dashboard',LayoutDashboard],['/lecturer/notes','My notes',FileText],['/lecturer/courses','Courses',BookOpen],['/lecturer/notes/upload','Upload',Upload],['/lecturer/profile','Profile',User]]
