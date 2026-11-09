@@ -34,7 +34,7 @@ export function Signup({role}){
     const x={name:f.name.trim()?'':'Enter your full name.',id:f.id.trim()?'':`Enter your ${t.idl.toLowerCase()}.`,email:GMAIL.test(email)?'':'Use your Gmail address, for example yourname@gmail.com.',password:f.password.length>=6?'':'Use 6 or more characters.',confirm:f.confirm===f.password?'':'The passwords do not match.'}
     setE(x);if(Object.values(x).some(Boolean))return
     setBusy(true)
-    register(role,{name:f.name.trim(),id:f.id.trim(),department:f.department,email,password:f.password}).then(r=>{setDemo(r.demoCode||'');setCode('');setWait(30);setStep('verify');setBusy(false)}).catch(err=>{setE({f:err.message});setBusy(false)})}
+    register(role,{name:f.name.trim(),id:f.id.trim(),department:role==='student'?f.department:undefined,email,password:f.password}).then(r=>{setDemo(r.demoCode||'');setCode('');setWait(30);setStep('verify');setBusy(false)}).catch(err=>{setE({f:err.message});setBusy(false)})}
   const verify=ev=>{ev.preventDefault();if(!/^\d{6}$/.test(code.trim())){setE({c:'Enter the 6-digit code.'});return}
     setE({});setBusy(true);verifyEmail(role,email,code).then(()=>nav(`/${role}/login`,{state:{created:true,id:f.id.trim()}})).catch(err=>{setE({c:err.message});setBusy(false)})}
   const resend=()=>{setE({});resendCode(role,email).then(r=>{setDemo(r.demoCode||'');setCode('');setWait(30)}).catch(err=>setE({c:err.message}))}
@@ -52,7 +52,7 @@ export function Signup({role}){
   <section className={border}><h1 className="text-3xl">{role==='student'?'Student sign up':'Lecturer sign up'}</h1><p>{role==='student'?'Skriva is open to 300 level students only.':'Create your account to manage lecture notes.'}</p>
   <form onSubmit={submit} noValidate><Field id="n" label="Full name" value={f.name} onChange={set('name')} error={e.name}/>
   <Field id="i" label={t.idl} placeholder={t.ph} value={f.id} onChange={set('id')} error={e.id}/>
-  <Field id="d" label="Department"><select id="d" className="input" value={f.department} onChange={set('department')}>{DEPARTMENTS.map(d=><option key={d}>{d}</option>)}</select></Field>
+  {role==='student'&&<Field id="d" label="Department"><select id="d" className="input" value={f.department} onChange={set('department')}>{DEPARTMENTS.map(d=><option key={d}>{d}</option>)}</select></Field>}
   <Field id="m" label="Gmail address" type="email" placeholder="yourname@gmail.com" value={f.email} onChange={set('email')} error={e.email}/>
   <Field id="pw" label="Password" type="password" value={f.password} onChange={set('password')} error={e.password}/>
   <Field id="pc" label="Confirm password" type="password" value={f.confirm} onChange={set('confirm')} error={e.confirm}/>

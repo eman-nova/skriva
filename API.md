@@ -10,7 +10,7 @@ Enable CORS for the front end's address.
 ## Auth
 | Method | Path | Body | Success response |
 |---|---|---|---|
-| POST | `/auth/register` | `{ role, name, identifier, department, email, password }`. `email` must be a Gmail address. | `204`. Does not create the account yet. Sends a 6-digit code to the email (valid 10 minutes). Reject a duplicate identifier or email with 409. |
+| POST | `/auth/register` | `{ role, name, identifier, department, email, password }`. `department` is sent for students only. `email` must be a Gmail address. | `204`. Does not create the account yet. Sends a 6-digit code to the email (valid 10 minutes). Reject a duplicate identifier or email with 409. |
 | POST | `/auth/verify-email` | `{ role, email, code }` | `204`. Creates the account. It does not log the user in: the app sends them to the login page. Reject a wrong or expired code with 400, and lock the code after 5 wrong tries. |
 | POST | `/auth/resend-code` | `{ role, email }` | `204`. Sends a new code. |
 | POST | `/auth/login` | `{ role: "student" \| "lecturer", identifier, password }` | `{ token, user }` |
