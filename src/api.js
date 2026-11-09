@@ -43,7 +43,7 @@ export const api={
   deleteNote:id=>req(`/notes/${id}`,{method:'DELETE'}),
 }
 // Sign up has two steps. register() sends a 6-digit code to the user's Gmail address.
-// verifyEmail() checks the code and only then creates the account.
+// verifyEmail() checks the code and only then creates the account. It does not log the user in: they go to the login page.
 // Without a backend no email can be sent, so the demo returns the code (demoCode) to show on screen.
 const PK='skriva_pending'
 const newCode=()=>String(100000+crypto.getRandomValues(new Uint32Array(1))[0]%900000)
@@ -65,10 +65,9 @@ export async function verifyEmail(role,email,code){
     if(Date.now()>p.expires)throw new Error('This code has expired. Request a new one.')
     if(p.tries>=5)throw new Error('Too many wrong tries. Request a new code.')
     if(p.code!==String(code).trim()){p.tries++;sessionStorage.setItem(PK,JSON.stringify(p));throw new Error('That code is not right. Check it and try again.')}
-    const list=readAccounts();list.push({...p.user,role,hash:p.hash,emailVerified:true,lastLoginAt:Date.now()});saveAccounts(list)
-    sessionStorage.removeItem(PK);setSession({...p.user,returning:false},role);return p.user}
-  const r=await req('/auth/verify-email',{method:'POST',body:{role,email,code:String(code).trim()}})
-  setSession({...r.user,returning:false},role,r.token);return r.user}
+    const list=readAccounts();list.push({...p.user,role,hash:p.hash,emailVerified:true,lastLoginAt:null});saveAccounts(list)
+    sessionStorage.removeItem(PK);return null}
+  await req('/auth/verify-email',{method:'POST',body:{role,email,code:String(code).trim()}});return null}
 export async function resendCode(role,email){
   if(!API_ON){const p=readPending();if(!p)throw new Error('Start the sign up again.');p.code=newCode();p.expires=Date.now()+600000;p.tries=0;sessionStorage.setItem(PK,JSON.stringify(p));return {demoCode:p.code}}
   await req('/auth/resend-code',{method:'POST',body:{role,email}});return {}}

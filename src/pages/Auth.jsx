@@ -1,18 +1,18 @@
 import {useEffect,useState} from 'react'
-import {Link,useNavigate} from 'react-router-dom'
+import {Link,useLocation,useNavigate} from 'react-router-dom'
 import {Eye,EyeOff,Loader2} from 'lucide-react'
 import {PublicLayout,Field} from '../components/ui'
 import {API_ON,login,register,verifyEmail,resendCode,forgotPassword} from '../api'
 import {DEPARTMENTS} from '../data/mock'
 const T={student:{h:'Student login',l:'Matriculation number',idl:'Matriculation number',ph:'e.g. 21/0457',side:['Welcome.','Every note for your courses, in one place.'],note:'Skriva is open to 300 level students only.'},lecturer:{h:'Lecturer login',l:'Lecturer ID or personal email',idl:'Lecturer ID',ph:'e.g. LEC-0231',side:['Lecturer portal.','Upload, organise and update the materials your students rely on.'],note:'Sign in to manage your lecture notes.'}}
 export function Login({role}){
-  const t=T[role],nav=useNavigate(),[u,setU]=useState(''),[p,setP]=useState(''),[show,setShow]=useState(false),[e,setE]=useState({}),[busy,setBusy]=useState(false)
+  const t=T[role],nav=useNavigate(),loc=useLocation(),created=loc.state?.created,[u,setU]=useState(loc.state?.id||''),[p,setP]=useState(''),[show,setShow]=useState(false),[e,setE]=useState({}),[busy,setBusy]=useState(false)
   const submit=ev=>{ev.preventDefault();const x={u:u.trim()?'':`Enter your ${t.l.toLowerCase()}.`,p:p?'':'Enter your password.'};setE(x);if(x.u||x.p)return
     setBusy(true)
     login(role,u.trim(),p).then(()=>nav(`/${role}/dashboard`)).catch(err=>{setE({f:err.message});setBusy(false)})}
   return <PublicLayout><div className="mx-auto my-12 grid max-w-4xl overflow-hidden rounded-3xl shadow-2xl md:grid-cols-2">
   <aside className="flex flex-col justify-center bg-gradient-to-br from-[#001340] to-navy p-10 text-white"><h2 className="text-4xl !text-white">{t.side[0]}</h2><p className="text-blue-100">{t.side[1]}</p></aside>
-  <section className={`bg-white p-10 border-t-8 ${role==='student'?'border-brand':'border-gold'}`}><h1 className="text-3xl">{t.h}</h1><p>{t.note}</p>
+  <section className={`bg-white p-10 border-t-8 ${role==='student'?'border-brand':'border-gold'}`}><h1 className="text-3xl">{t.h}</h1><p>{t.note}</p>{created&&<p role="status" className="rounded-xl bg-ivory p-3 text-sm text-green-700">Account created. Log in to continue.</p>}
   <form onSubmit={submit} noValidate><Field id="u" label={t.l} placeholder={t.ph} value={u} onChange={x=>setU(x.target.value)} error={e.u}/>
   <label htmlFor="p" className="label">Password</label><div className="relative"><input id="p" className="input pr-12" type={show?'text':'password'} value={p} onChange={x=>setP(x.target.value)}/><button type="button" onClick={()=>setShow(!show)} aria-label={show?'Hide password':'Show password'} className="absolute right-3 top-2.5 text-brand">{show?<EyeOff size={20}/>:<Eye size={20}/>}</button></div>
   <div className="err" role="alert">{e.p}</div><div className="err" role="alert">{e.f}</div>
@@ -36,7 +36,7 @@ export function Signup({role}){
     setBusy(true)
     register(role,{name:f.name.trim(),id:f.id.trim(),department:f.department,email,password:f.password}).then(r=>{setDemo(r.demoCode||'');setCode('');setWait(30);setStep('verify');setBusy(false)}).catch(err=>{setE({f:err.message});setBusy(false)})}
   const verify=ev=>{ev.preventDefault();if(!/^\d{6}$/.test(code.trim())){setE({c:'Enter the 6-digit code.'});return}
-    setE({});setBusy(true);verifyEmail(role,email,code).then(()=>nav(`/${role}/dashboard`)).catch(err=>{setE({c:err.message});setBusy(false)})}
+    setE({});setBusy(true);verifyEmail(role,email,code).then(()=>nav(`/${role}/login`,{state:{created:true,id:f.id.trim()}})).catch(err=>{setE({c:err.message});setBusy(false)})}
   const resend=()=>{setE({});resendCode(role,email).then(r=>{setDemo(r.demoCode||'');setCode('');setWait(30)}).catch(err=>setE({c:err.message}))}
   const aside=<aside className="flex flex-col justify-center bg-gradient-to-br from-[#001340] to-navy p-10 text-white"><h2 className="text-4xl !text-white">{t.side[0]}</h2><p className="text-blue-100">{t.side[1]}</p></aside>
   const border=`bg-white p-10 border-t-8 ${role==='student'?'border-brand':'border-gold'}`

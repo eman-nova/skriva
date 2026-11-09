@@ -11,7 +11,7 @@ Enable CORS for the front end's address.
 | Method | Path | Body | Success response |
 |---|---|---|---|
 | POST | `/auth/register` | `{ role, name, identifier, department, email, password }`. `email` must be a Gmail address. | `204`. Does not create the account yet. Sends a 6-digit code to the email (valid 10 minutes). Reject a duplicate identifier or email with 409. |
-| POST | `/auth/verify-email` | `{ role, email, code }` | `{ token, user }`. Creates the account and logs the user in. Reject a wrong or expired code with 400, and lock the code after 5 wrong tries. |
+| POST | `/auth/verify-email` | `{ role, email, code }` | `204`. Creates the account. It does not log the user in: the app sends them to the login page. Reject a wrong or expired code with 400, and lock the code after 5 wrong tries. |
 | POST | `/auth/resend-code` | `{ role, email }` | `204`. Sends a new code. |
 | POST | `/auth/login` | `{ role: "student" \| "lecturer", identifier, password }` | `{ token, user }` |
 | POST | `/auth/forgot-password` | `{ role, identifier }` | `204` (always, even if the account does not exist) |
@@ -21,7 +21,7 @@ Enable CORS for the front end's address.
 
 `user`: `{ id, name, department, email, matricNumber (students), level (students, 300), lastLoginAt }`
 
-`lastLoginAt` is the time of the user's previous session (set it when the account is created, and update it on every login), or `null` if there was none. The dashboard says "Welcome back" only when it has a value, and "Welcome" otherwise. Update it on every login.
+`lastLoginAt` is the time of the user's previous login, or `null` if they have never logged in. Update it on every login. The dashboard says "Welcome back" only when it has a value, and "Welcome" otherwise. Update it on every login.
 
 ## Courses
 | Method | Path | Notes |
